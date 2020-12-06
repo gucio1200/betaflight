@@ -90,7 +90,18 @@ const struct ioPortDef_s ioPortDefs[] = {
     { RCC_AHB4(GPIOF) },
     { RCC_AHB4(GPIOG) },
     { RCC_AHB4(GPIOH) },
+#if !(defined(STM32H723xx) || defined(STM32H725xx))
     { RCC_AHB4(GPIOI) },
+#endif
+};
+#elif defined(STM32G4)
+const struct ioPortDef_s ioPortDefs[] = {
+    { RCC_AHB2(GPIOA) },
+    { RCC_AHB2(GPIOB) },
+    { RCC_AHB2(GPIOC) },
+    { RCC_AHB2(GPIOD) },
+    { RCC_AHB2(GPIOE) },
+    { RCC_AHB2(GPIOF) },
 };
 #endif
 
@@ -155,16 +166,10 @@ uint32_t IO_EXTI_Line(IO_t io)
     if (!io) {
         return 0;
     }
-#if defined(STM32F1)
+#if defined(STM32F1) || defined(STM32F4) || defined(STM32F7) || defined(STM32H7) || defined(STM32G4)
     return 1 << IO_GPIOPinIdx(io);
 #elif defined(STM32F3)
     return IO_GPIOPinIdx(io);
-#elif defined(STM32F4)
-    return 1 << IO_GPIOPinIdx(io);
-#elif defined(STM32F7)
-    return 1 << IO_GPIOPinIdx(io);
-#elif defined(STM32H7)
-    return 1 << IO_GPIOPinIdx(io);
 #elif defined(SIMULATOR_BUILD)
     return 0;
 #else
@@ -194,11 +199,7 @@ void IOWrite(IO_t io, bool hi)
 #if defined(USE_FULL_LL_DRIVER)
     LL_GPIO_SetOutputPin(IO_GPIO(io), IO_Pin(io) << (hi ? 0 : 16));
 #elif defined(USE_HAL_DRIVER)
-    if (hi) {
-        HAL_GPIO_WritePin(IO_GPIO(io), IO_Pin(io), GPIO_PIN_SET);
-    } else {
-        HAL_GPIO_WritePin(IO_GPIO(io), IO_Pin(io), GPIO_PIN_RESET);
-    }
+    HAL_GPIO_WritePin(IO_GPIO(io), IO_Pin(io), hi ? GPIO_PIN_SET : GPIO_PIN_RESET);
 #elif defined(STM32F4)
     if (hi) {
         IO_GPIO(io)->BSRRL = IO_Pin(io);
@@ -333,25 +334,11 @@ void IOConfigGPIO(IO_t io, ioConfig_t cfg)
     GPIO_Init(IO_GPIO(io), &init);
 }
 
-#elif defined(STM32H7)
+#elif defined(STM32H7) || defined(STM32G4)
 
 void IOConfigGPIO(IO_t io, ioConfig_t cfg)
 {
-    if (!io) {
-        return;
-    }
-
-    rccPeriphTag_t rcc = ioPortDefs[IO_GPIOPortIdx(io)].rcc;
-    RCC_ClockCmd(rcc, ENABLE);
-
-    GPIO_InitTypeDef init = {
-        .Pin = IO_Pin(io),
-        .Mode = (cfg >> 0) & 0x13,
-        .Speed = (cfg >> 2) & 0x03,
-        .Pull = (cfg >> 5) & 0x03,
-    };
-
-    HAL_GPIO_Init(IO_GPIO(io), &init);
+    IOConfigGPIOAF(io, cfg, 0);
 }
 
 void IOConfigGPIOAF(IO_t io, ioConfig_t cfg, uint8_t af)
@@ -495,3 +482,9 @@ IO_t IOGetByTag(ioTag_t tag)
     return ioRecs + offset;
 }
 
+void IOTraversePins(IOTraverseFuncPtr_t fnPtr)
+{
+    for (int i = 0; i < DEFIO_IO_USED_COUNT; i++) {
+        fnPtr(&ioRecs[i]);
+    }
+}

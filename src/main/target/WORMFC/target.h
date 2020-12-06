@@ -32,6 +32,8 @@
 
 #endif
 
+#define USE_TARGET_CONFIGURATION
+
 //LEDs
 #if defined(PIRXF4)
 #define LED0_PIN                PC13
@@ -41,12 +43,13 @@
 #define LED1_PIN                PC14
 #endif
 
-#define ENABLE_DSHOT_DMAR       true
+#define ENABLE_DSHOT_DMAR       DSHOT_DMAR_ON
 
 //define camera control
 #if defined(PIRXF4)
-#define USE_CAMERA_CONTROL
-#define CAMERA_CONTROL_PIN PA4
+// XXX CAMERA_CONTROL_PIN is deprecated.
+// XXX Target maintainer must create a valid timerHardware[] array entry for PA4 with TIM_USE_CAMERA_CONTROL
+//#define CAMERA_CONTROL_PIN PA4
 #endif
 
 //BEEPER
@@ -165,8 +168,6 @@
 #define MAX7456_SPI_INSTANCE    SPI3
 #define MAX7456_SPI_CS_PIN      PC0
 #endif
-#define MAX7456_SPI_CLK         (SPI_CLOCK_STANDARD) // 10MHz
-#define MAX7456_RESTORE_CLK     (SPI_CLOCK_FAST)
 
 #define USE_ADC
 #define DEFAULT_VOLTAGE_METER_SOURCE VOLTAGE_METER_ADC

@@ -39,12 +39,19 @@
 #define BEEPER_PIN              PD15
 #define BEEPER_INVERTED
 
+// XXX CAMERA_CONTROL_PIN is deprecated, so it was moved to PE13 entry in timerHardware[] array,
+// XXX where it is shared with PPM.
+// XXX Target maintainer must confirm intended operation under this change.
 //define camera control
-#define CAMERA_CONTROL_PIN      PE13
+//#define CAMERA_CONTROL_PIN      PE13
 
 #define USE_ACC
 #define USE_GYRO
 #define USE_EXTI
+
+// MPU6000
+#define USE_ACC_SPI_MPU6000
+#define USE_GYRO_SPI_MPU6000
 
 // ICM-20689
 #define USE_ACC_SPI_ICM20689
@@ -117,8 +124,6 @@
 #define USE_MAX7456
 #define MAX7456_SPI_INSTANCE    SPI2
 #define MAX7456_SPI_CS_PIN      SPI2_NSS_PIN
-#define MAX7456_SPI_CLK         (SPI_CLOCK_STANDARD) // 10MHz
-#define MAX7456_RESTORE_CLK     (SPI_CLOCK_FAST)
 
 #if defined(KAKUTEF7MINI)
 #define ENABLE_BLACKBOX_LOGGING_ON_SPIFLASH_BY_DEFAULT

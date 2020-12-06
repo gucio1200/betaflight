@@ -24,10 +24,8 @@
 
 #include "build/version.h"
 
-// Targets with built-in vtx do not need external vtx
-#if defined(USE_VTX_RTC6705) && !defined(VTX_RTC6705_OPTIONAL)
-#undef USE_VTX_SMARTAUDIO
-#undef USE_VTX_TRAMP
+#if defined(USE_VTX_RTC6705_SOFTSPI)
+#define USE_VTX_RTC6705
 #endif
 
 #ifndef USE_DSHOT
@@ -60,9 +58,24 @@
 #endif
 #endif
 
-#if !defined(USE_BARO)
+#if !defined(USE_MAG)
+#undef USE_MAG_DATA_READY_SIGNAL
+#undef USE_MAG_HMC5883
+#undef USE_MAG_SPI_HMC5883
+#undef USE_MAG_QMC5883
+#undef USE_MAG_LIS3MDL
+#undef USE_MAG_AK8963
+#undef USE_MAG_SPI_AK8963
+#endif
+
+#if !defined(USE_BARO) && !defined(USE_GPS)
 #undef USE_VARIO
 #endif
+
+#if defined(USE_BARO) && !defined(BARO_EOC_PIN)
+#define BARO_EOC_PIN NONE
+#endif
+
 
 #if !defined(USE_SERIAL_RX)
 #undef USE_SERIALRX_CRSF
@@ -79,6 +92,7 @@
 #if !defined(USE_TELEMETRY)
 #undef USE_CRSF_CMS_TELEMETRY
 #undef USE_TELEMETRY_CRSF
+#undef USE_TELEMETRY_GHST
 #undef USE_TELEMETRY_FRSKY_HUB
 #undef USE_TELEMETRY_HOTT
 #undef USE_TELEMETRY_IBUS
@@ -94,6 +108,11 @@
 #if !defined(USE_SERIALRX_CRSF)
 #undef USE_TELEMETRY_CRSF
 #undef USE_CRSF_LINK_STATISTICS
+#undef USE_RX_RSSI_DBM
+#endif
+
+#if !defined(USE_SERIALRX_GHST)
+#undef USE_TELEMETRY_GHST
 #endif
 
 #if !defined(USE_TELEMETRY_CRSF) || !defined(USE_CMS)
@@ -135,9 +154,10 @@
 #undef USE_VTX_CONTROL
 #undef USE_VTX_TRAMP
 #undef USE_VTX_SMARTAUDIO
+#undef USE_VTX_TABLE
 #endif
 
-#if defined(USE_RX_FRSKY_SPI_D) || defined(USE_RX_FRSKY_SPI_X)
+#if defined(USE_RX_FRSKY_SPI_D) || defined(USE_RX_FRSKY_SPI_X) || defined(USE_RX_REDPINE_SPI)
 #define USE_RX_CC2500
 #define USE_RX_FRSKY_SPI
 #endif
@@ -156,7 +176,7 @@
 
 // Burst dshot to default off if not configured explicitly by target
 #ifndef ENABLE_DSHOT_DMAR
-#define ENABLE_DSHOT_DMAR false
+#define ENABLE_DSHOT_DMAR DSHOT_DMAR_OFF
 #endif
 
 // Some target doesn't define USE_ADC which USE_ADC_INTERNAL depends on
@@ -164,8 +184,32 @@
 #undef USE_ADC_INTERNAL
 #endif
 
+#if defined(USE_FLASH_W25M512)
+#define USE_FLASH_W25M
+#define USE_FLASH_M25P16
+#define USE_FLASH_W25M
+#endif
+
+#if defined(USE_FLASH_W25M02G)
+#define USE_FLASH_W25N01G
+#define USE_FLASH_W25M
+#endif
+
+#if defined(USE_FLASH_M25P16) || defined(USE_FLASH_W25N01G)
+#define USE_FLASH_CHIP
+#endif
+
+#ifndef USE_FLASH_CHIP
+#undef USE_FLASHFS
+#endif
+
 #if (!defined(USE_SDCARD) && !defined(USE_FLASHFS)) || !defined(USE_BLACKBOX)
 #undef USE_USB_MSC
+#endif
+
+#if !defined(USE_SDCARD)
+#undef USE_SDCARD_SDIO
+#undef USE_SDCARD_SPI
 #endif
 
 #if !defined(USE_VCP)
@@ -175,16 +219,6 @@
 
 #if defined(USE_USB_CDC_HID) || defined(USE_USB_MSC)
 #define USE_USB_ADVANCED_PROFILES
-#endif
-
-
-#if defined(USE_FLASH_W25M512)
-#define USE_FLASH_W25M
-#define USE_FLASH_M25P16
-#endif
-
-#if defined(USE_FLASH_M25P16)
-#define USE_FLASH_CHIP
 #endif
 
 #if defined(USE_MAX7456)
@@ -215,11 +249,11 @@
 #define USE_RX_XN297
 #endif
 
-#ifdef USE_UNIFIED_TARGET
-#define USE_CONFIGURATION_STATE
-
-// Setup crystal frequency for backward compatibility
-// Should be set to zero for generic targets and set with CLI variable set system_hse_value.
+// Setup crystal frequency on F4 for backward compatibility
+// Should be set to zero for generic targets to ensure USB is working
+// when unconfigured for targets with non-standard crystal.
+// Can be set at runtime with with CLI parameter 'system_hse_value'.
+#if !defined(STM32F4) || defined(USE_UNIFIED_TARGET)
 #define SYSTEM_HSE_VALUE 0
 #else
 #ifdef TARGET_XTAL_MHZ
@@ -227,7 +261,7 @@
 #else
 #define SYSTEM_HSE_VALUE (HSE_VALUE/1000000U)
 #endif
-#endif // USE_UNIFIED_TARGET
+#endif // !STM32F4 || USE_UNIFIED_TARGET
 
 // Number of pins that needs pre-init
 #ifdef USE_SPI
@@ -240,7 +274,7 @@
 #undef USE_USB_MSC
 #endif
 
-#if (!defined(USE_FLASHFS) || !defined(USE_RTC_TIME) || !defined(USE_USB_MSC))
+#if (!defined(USE_FLASHFS) || !defined(USE_RTC_TIME) || !defined(USE_USB_MSC) || !defined(USE_PERSISTENT_OBJECTS))
 #undef USE_PERSISTENT_MSC_RTC
 #endif
 
@@ -248,6 +282,10 @@
 #undef  USE_SERIAL_4WAY_BLHELI_INTERFACE
 #elif !defined(USE_SERIAL_4WAY_BLHELI_INTERFACE) && (defined(USE_SERIAL_4WAY_BLHELI_BOOTLOADER) || defined(USE_SERIAL_4WAY_SK_BOOTLOADER))
 #define USE_SERIAL_4WAY_BLHELI_INTERFACE
+#endif
+
+#if !defined(USE_PWM_OUTPUT)
+#undef USE_SERIAL_4WAY_BLHELI_INTERFACE // implementation requires USE_PWM_OUTPUT to find motor outputs.
 #endif
 
 #if !defined(USE_LED_STRIP)
@@ -269,6 +307,7 @@
 
 #ifndef USE_DSHOT
 #undef USE_DSHOT_TELEMETRY
+#undef USE_DSHOT_BITBANG
 #endif
 
 #ifndef USE_DSHOT_TELEMETRY
@@ -294,6 +333,12 @@
 #undef BEEPER_PWM_HZ
 #endif
 
+#if defined(USE_DSHOT) || defined(USE_LED_STRIP) || defined(USE_TRANSPONDER)
+#define USE_TIMER_DMA
+#else
+#undef USE_DMA_SPEC
+#endif
+
 #if !defined(USE_DMA_SPEC)
 #undef USE_TIMER_MGMT
 #endif
@@ -313,7 +358,51 @@
 #undef USE_RANGEFINDER_TF
 #endif
 
+#ifndef USE_GPS_RESCUE
+#undef USE_CMS_GPS_RESCUE_MENU
+#endif
+
 // TODO: Remove this once HAL support is fixed for ESCSERIAL
 #ifdef STM32F7
 #undef USE_ESCSERIAL
+#endif
+
+#if defined(CONFIG_IN_RAM) || defined(CONFIG_IN_FILE) || defined(CONFIG_IN_EXTERNAL_FLASH) || defined(CONFIG_IN_SDCARD)
+#ifndef EEPROM_SIZE
+#define EEPROM_SIZE     4096
+#endif
+extern uint8_t eepromData[EEPROM_SIZE];
+#define __config_start (*eepromData)
+#define __config_end (*ARRAYEND(eepromData))
+#else
+#ifndef CONFIG_IN_FLASH
+#define CONFIG_IN_FLASH
+#endif
+extern uint8_t __config_start;   // configured via linker script when building binaries.
+extern uint8_t __config_end;
+#endif
+
+#if defined(USE_EXST) && !defined(RAMBASED)
+#define USE_FLASH_BOOT_LOADER
+#endif
+
+#if !defined(USE_RPM_FILTER)
+#undef USE_DYN_IDLE
+#endif
+
+#ifndef USE_ITERM_RELAX
+#undef USE_ABSOLUTE_CONTROL
+#endif
+
+#if defined(USE_CUSTOM_DEFAULTS)
+#define USE_CUSTOM_DEFAULTS_ADDRESS
+#endif
+
+#if !defined(USE_EXTI)
+#undef USE_RX_SPI
+#undef USE_RANGEFINDER_HCSR04
+#endif
+
+#if defined(USE_RX_SPI) || defined (USE_SERIALRX_SRXL2)
+#define USE_RX_BIND
 #endif

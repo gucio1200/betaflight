@@ -30,12 +30,11 @@
 
 #include "drivers/io.h"
 
-#include "fc/config.h"
+#include "config/config.h"
 #include "fc/rc_controls.h"
 #include "fc/controlrate_profile.h"
 
 #include "flight/failsafe.h"
-#include "flight/mixer.h"
 #include "flight/pid.h"
 
 #include "pg/rx.h"
@@ -48,6 +47,7 @@
 
 #include "pg/beeper_dev.h"
 #include "pg/flash.h"
+#include "pg/motor.h"
 
 #include "hardware_revision.h"
 
@@ -63,7 +63,6 @@ void targetConfiguration(void)
 
     gyroDeviceConfigMutable()->extiTag = selectMPUIntExtiConfigByHardwareRevision();
 
-    gyroConfigMutable()->gyro_hardware_lpf = GYRO_HARDWARE_LPF_1KHZ_SAMPLE;
     gyroConfigMutable()->gyro_soft_lpf_hz = 100;
     gyroConfigMutable()->gyro_soft_notch_hz_1 = 0;
     gyroConfigMutable()->gyro_soft_notch_hz_2 = 0;
@@ -118,7 +117,7 @@ void targetConfiguration(void)
     }
 #endif
 
-#ifdef MAG_INT_EXTI
+#if defined(USE_MAG) && defined(MAG_INT_EXTI)
     if (hardwareRevision < NAZE32_REV5) {
         compassConfigMutable()->interruptTag = IO_TAG(PB12);
     }

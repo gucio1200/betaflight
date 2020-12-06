@@ -26,7 +26,7 @@
 
 #define USE_TARGET_CONFIG
 
-#define ENABLE_DSHOT_DMAR               true
+#define ENABLE_DSHOT_DMAR               DSHOT_DMAR_ON
 
 #define LED0_PIN                        PA14
 
@@ -34,7 +34,9 @@
 #define PINIO1_PIN                      PB12        //VTX Power Switch
 #define USE_PINIOBOX
 
-#define CAMERA_CONTROL_PIN              PB8         //Camera OSD
+// XXX CAMERA_CONTROL_PIN is deprecated.
+// XXX Target maintainer must create a valid timerHardware[] array entry for PB8 with TIM_USE_CAMERA_CONTROL
+//#define CAMERA_CONTROL_PIN              PB8         //Camera OSD
 
 #define USE_BEEPER
 
@@ -62,7 +64,6 @@
 
 #define USE_ACC_MPU6000
 #define USE_ACC_SPI_MPU6000
-#define ACC_1_ALIGN                     CW180_DEG_FLIP
 
 // *************** I2C ***************
 #define USE_I2C

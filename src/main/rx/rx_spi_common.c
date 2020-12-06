@@ -51,7 +51,7 @@ void rxSpiCommonIOInit(const rxSpiConfig_t *rxSpiConfig)
 
     if (rxSpiConfig->bindIoTag) {
         bindPin = IOGetByTag(rxSpiConfig->bindIoTag);
-        IOInit(bindPin, OWNER_RX_BIND, 0);
+        IOInit(bindPin, OWNER_RX_SPI_BIND, 0);
         IOConfigGPIO(bindPin, IOCFG_IPU);
         lastBindPinStatus = IORead(bindPin);
     } else {
@@ -94,19 +94,18 @@ void rxSpiLedBlink(timeMs_t blinkMs)
 
 void rxSpiLedBlinkRxLoss(rx_spi_received_e result)
 {
-    static uint16_t rxLossCount = 0;
+    static timeMs_t rxLossMs = 0;
 
     if (ledPin) {
         if (result == RX_SPI_RECEIVED_DATA) {
-            rxLossCount = 0;
             rxSpiLedOn();
         } else {
-            if (rxLossCount  < RX_LOSS_COUNT) {
-                rxLossCount++;
-            } else {
-                rxSpiLedBlink(INTERVAL_RX_LOSS_MS);
+            if ((rxLossMs + INTERVAL_RX_LOSS_MS) > millis()) {
+                return;
             }
+            rxSpiLedToggle();
         }
+        rxLossMs = millis();
     }
 }
 

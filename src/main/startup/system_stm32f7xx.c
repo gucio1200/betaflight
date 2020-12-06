@@ -222,10 +222,14 @@
       PeriphClkInitStruct.Usart6ClockSelection = RCC_USART6CLKSOURCE_PCLK2;
       PeriphClkInitStruct.Uart7ClockSelection = RCC_UART7CLKSOURCE_PCLK1;
       PeriphClkInitStruct.Uart8ClockSelection = RCC_UART8CLKSOURCE_PCLK1;
+
+      // I2C clock sources: Note that peripheral clock determination in bus_i2c_hal_init.c must be modified when the sources are modified.
+
       PeriphClkInitStruct.I2c1ClockSelection = RCC_I2C1CLKSOURCE_PCLK1;
       PeriphClkInitStruct.I2c2ClockSelection = RCC_I2C2CLKSOURCE_PCLK1;
       PeriphClkInitStruct.I2c3ClockSelection = RCC_I2C3CLKSOURCE_PCLK1;
       PeriphClkInitStruct.I2c4ClockSelection = RCC_I2C4CLKSOURCE_PCLK1;
+
       ret = HAL_RCCEx_PeriphCLKConfig(&PeriphClkInitStruct);
       if (ret != HAL_OK) {
           while (1);
@@ -347,6 +351,24 @@ void SystemInit(void)
         while (1);
     }
     SCB->VTOR = vtorOffset;
+
+#ifdef USE_HAL_DRIVER
+    HAL_Init();
+#endif
+
+    /* Enable I-Cache */
+    if (INSTRUCTION_CACHE_ENABLE) {
+        SCB_EnableICache();
+    }
+
+    /* Enable D-Cache */
+    if (DATA_CACHE_ENABLE) {
+        SCB_EnableDCache();
+    }
+
+    if (PREFETCH_ENABLE) {
+        LL_FLASH_EnablePrefetch();
+    }
 
     /* Configure the system clock to specified frequency */
     SystemClock_Config();

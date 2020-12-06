@@ -35,15 +35,16 @@
 #ifdef SYNERGYF4
 #include "io/vtx.h"
 #include "io/ledstrip.h"
-#include "fc/config.h"
+#include "config/config.h"
 #include "pg/piniobox.h"
 #include "common/axis.h"
 #include "sensors/barometer.h"
 #include "sensors/compass.h"
 #include "sensors/gyro.h"
-#include "flight/mixer.h"
 #include "flight/pid.h"
 #include "drivers/pwm_output.h"
+#include "pg/motor.h"
+
 static targetSerialPortFunction_t targetSerialPortFunction[] = {
     { SERIAL_PORT_USART1, FUNCTION_RX_SERIAL },
     { SERIAL_PORT_USART3,  FUNCTION_VTX_SMARTAUDIO },
@@ -69,12 +70,11 @@ void targetConfiguration(void)
     targetSerialPortFunctionConfig(targetSerialPortFunction, ARRAYLEN(targetSerialPortFunction));
 #endif
 #ifdef SYNERGYF4
-    pinioBoxConfigMutable()->permanentId[0] = 39;
+    pinioBoxConfigMutable()->permanentId[0] = 40;
     vtxSettingsConfigMutable()->pitModeFreq = 0;
     ledStripStatusModeConfigMutable()->ledConfigs[0] = DEFINE_LED(0, 0, 0, 0, LF(COLOR), LO(VTX), 0);
     targetSerialPortFunctionConfig(targetSerialPortFunction, ARRAYLEN(targetSerialPortFunction));
     motorConfigMutable()->dev.motorPwmProtocol = PWM_TYPE_DSHOT600;
-    gyroConfigMutable()->gyro_sync_denom = 1;  // 8kHz gyro
     pidConfigMutable()->pid_process_denom = 1; // 8kHz PID
 #endif
 }

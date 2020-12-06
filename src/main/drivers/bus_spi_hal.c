@@ -1,21 +1,24 @@
 /*
- * This file is part of Cleanflight.
+ * This file is part of Cleanflight and Betaflight.
  *
- * Cleanflight is free software: you can redistribute it and/or modify
- * it under the terms of the GNU General Public License as published by
- * the Free Software Foundation, either version 3 of the License, or
- * (at your option) any later version.
+ * Cleanflight and Betaflight are free software. You can redistribute
+ * this software and/or modify this software under the terms of the
+ * GNU General Public License as published by the Free Software
+ * Foundation, either version 3 of the License, or (at your option)
+ * any later version.
  *
- * Cleanflight is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- * GNU General Public License for more details.
+ * Cleanflight and Betaflight are distributed in the hope that they
+ * will be useful, but WITHOUT ANY WARRANTY; without even the implied
+ * warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
+ * See the GNU General Public License for more details.
  *
  * You should have received a copy of the GNU General Public License
- * along with Cleanflight.  If not, see <http://www.gnu.org/licenses/>.
+ * along with this software.
+ *
+ * If not, see <http://www.gnu.org/licenses/>.
+ *
+ * HAL version resurrected from v3.1.7 (by jflyper)
  */
-
-// HAL version resurrected from v3.1.7
 
 #include <stdbool.h>
 #include <stdint.h>
@@ -33,7 +36,7 @@
 #include "nvic.h"
 #include "rcc.h"
 
-void spiInitDevice(SPIDevice device)
+void spiInitDevice(SPIDevice device, bool leadingEdge)
 {
     spiDevice_t *spi = &(spiDevice[device]);
 
@@ -41,16 +44,7 @@ void spiInitDevice(SPIDevice device)
         return;
     }
 
-#ifdef SDCARD_SPI_INSTANCE
-    if (spi->dev == SDCARD_SPI_INSTANCE) {
-        spi->leadingEdge = true;
-    }
-#endif
-#ifdef RX_SPI_INSTANCE
-    if (spi->dev == RX_SPI_INSTANCE) {
-        spi->leadingEdge = true;
-    }
-#endif
+    spi->leadingEdge = leadingEdge;
 
     // Enable SPI clock
     RCC_ClockCmd(spi->rcc, ENABLE);
@@ -66,7 +60,7 @@ void spiInitDevice(SPIDevice device)
     IOConfigGPIOAF(IOGetByTag(spi->mosi), SPI_IO_AF_CFG, spi->af);
 #endif
 
-#if defined(STM32F4) || defined(STM32F7) || defined(STM32H7)
+#if defined(STM32F4) || defined(STM32F7) || defined(STM32H7) || defined(STM32G4)
     IOConfigGPIOAF(IOGetByTag(spi->sck), spi->leadingEdge ? SPI_IO_AF_SCK_CFG_LOW : SPI_IO_AF_SCK_CFG_HIGH, spi->sckAF);
     IOConfigGPIOAF(IOGetByTag(spi->miso), SPI_IO_AF_MISO_CFG, spi->misoAF);
     IOConfigGPIOAF(IOGetByTag(spi->mosi), SPI_IO_AF_CFG, spi->mosiAF);
@@ -91,8 +85,10 @@ void spiInitDevice(SPIDevice device)
     spi->hspi.Init.BaudRatePrescaler = SPI_BAUDRATEPRESCALER_256;
     spi->hspi.Init.CRCCalculation = SPI_CRCCALCULATION_DISABLE;
     spi->hspi.Init.TIMode = SPI_TIMODE_DISABLED;
+#if !defined(STM32G4)
     spi->hspi.Init.FifoThreshold = SPI_FIFO_THRESHOLD_01DATA;
     spi->hspi.Init.MasterKeepIOState = SPI_MASTER_KEEP_IO_STATE_ENABLE;  /* Recommanded setting to avoid glitches */
+#endif
 
     if (spi->leadingEdge) {
         spi->hspi.Init.CLKPolarity = SPI_POLARITY_LOW;
@@ -216,48 +212,6 @@ void dmaSPIIRQHandler(dmaChannelDescriptor_t* descriptor)
     SPIDevice device = descriptor->userParam;
     if (device != SPIINVALID)
         HAL_DMA_IRQHandler(&spiDevice[device].hdma);
-}
-
-DMA_HandleTypeDef* spiSetDMATransmit(DMA_Stream_TypeDef *Stream, uint32_t Channel, SPI_TypeDef *Instance, uint8_t *pData, uint16_t Size)
-{
-    SPIDevice device = spiDeviceByInstance(Instance);
-    spiDevice_t *spi = &(spiDevice[device]);
-
-    spi->hdma.Instance = Stream;
-#if !defined(STM32H7)
-    spi->hdma.Init.Channel = Channel;
-#else
-    UNUSED(Channel);
-#endif
-    spi->hdma.Init.Direction = DMA_MEMORY_TO_PERIPH;
-    spi->hdma.Init.PeriphInc = DMA_PINC_DISABLE;
-    spi->hdma.Init.MemInc = DMA_MINC_ENABLE;
-    spi->hdma.Init.PeriphDataAlignment = DMA_PDATAALIGN_BYTE;
-    spi->hdma.Init.MemDataAlignment = DMA_MDATAALIGN_BYTE;
-    spi->hdma.Init.Mode = DMA_NORMAL;
-    spi->hdma.Init.FIFOMode = DMA_FIFOMODE_DISABLE;
-    spi->hdma.Init.FIFOThreshold = DMA_FIFO_THRESHOLD_1QUARTERFULL;
-    spi->hdma.Init.PeriphBurst = DMA_PBURST_SINGLE;
-    spi->hdma.Init.MemBurst = DMA_MBURST_SINGLE;
-    spi->hdma.Init.Priority = DMA_PRIORITY_LOW;
-
-    HAL_DMA_DeInit(&spi->hdma);
-    HAL_DMA_Init(&spi->hdma);
-
-    __HAL_DMA_ENABLE(&spi->hdma);
-    __HAL_SPI_ENABLE(&spi->hspi);
-
-    /* Associate the initialized DMA handle to the spi handle */
-    __HAL_LINKDMA(&spi->hspi, hdmatx, spi->hdma);
-
-    // DMA TX Interrupt
-    dmaSetHandler(spi->dmaIrqHandler, dmaSPIIRQHandler, NVIC_BUILD_PRIORITY(3, 0), (uint32_t)device);
-
-    //HAL_CLEANCACHE(pData,Size);
-    // And Transmit
-    HAL_SPI_Transmit_DMA(&spi->hspi, pData, Size);
-
-    return &spi->hdma;
 }
 #endif // USE_DMA
 #endif

@@ -155,8 +155,6 @@
 #define USE_MAX7456
 #define MAX7456_SPI_INSTANCE    SPI2
 #define MAX7456_SPI_CS_PIN      PC8
-#define MAX7456_SPI_CLK         (SPI_CLOCK_STANDARD)
-#define MAX7456_RESTORE_CLK     (SPI_CLOCK_FAST)
 
 #define USE_BARO
 #define USE_BARO_MS5611
@@ -245,7 +243,7 @@
 #define PINIO2_PIN              PC14
 
 #define DEFAULT_MIXER           MIXER_QUADX
-#define ENABLE_DSHOT_DMAR       true
+#define ENABLE_DSHOT_DMAR       DSHOT_DMAR_ON
 #define USE_TARGET_CONFIG
 #define SOFTSERIAL1_TX_PIN      PC9
 #define SOFTSERIAL2_RX_PIN      PA8

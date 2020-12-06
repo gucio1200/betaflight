@@ -30,7 +30,7 @@
 #define BEEPER_PIN              PC5
 #define BEEPER_INVERTED
 
-#define ENABLE_DSHOT_DMAR       true
+#define ENABLE_DSHOT_DMAR       DSHOT_DMAR_ON
 
 // *************** Gyro & ACC **********************
 #define USE_SPI
@@ -51,7 +51,6 @@
 #define USE_ACC
 #define USE_ACC_SPI_MPU6000
 #define USE_ACC_SPI_MPU6500
-#define ACC_1_ALIGN             CW180_DEG
 
 // *************** Flash **************************
 #define USE_SPI_DEVICE_2
@@ -113,10 +112,6 @@
 #define SERIALRX_PROVIDER       SERIALRX_SBUS
 #define SERIALRX_UART           SERIAL_PORT_USART1
 
-// *************** CAM *****************************
-
-#define CAMERA_CONTROL_PIN      PA8
-
 // *************** PIN *****************************
 
 #define PINIO1_PIN             PB1
@@ -130,7 +125,7 @@
 
 // *************** ADC *****************************
 #define USE_ADC
-#define ADC3_DMA_STREAM         DMA2_Stream0
+#define ADC3_DMA_OPT            0
 #define VBAT_ADC_PIN            PC0
 #define CURRENT_METER_ADC_PIN   PC1
 #define RSSI_ADC_PIN            PC2
@@ -142,7 +137,6 @@
 
 #define USE_ESCSERIAL
 #define ESCSERIAL_TIMER_TX_PIN  PA3
-#define USE_SERIAL_4WAY_BLHELI_INTERFACE
 
 #define TARGET_IO_PORTA         0xffff
 #define TARGET_IO_PORTB         0xffff

@@ -30,7 +30,7 @@
 #include "common/utils.h"
 
 #include "drivers/io.h"
-#include "pg/pg.h"
+
 #include "pg/usb.h"
 
 #if defined(STM32F4)
@@ -40,12 +40,8 @@
 #include "usbd_hid_cdc_wrapper.h"
 #endif
 #include "usb_io.h"
-#elif defined(STM32F7) || defined(STM32H7)
-#ifdef STM32F7
+#elif defined(STM32F7) || defined(STM32H7) || defined(STM32G4)
 #include "vcp_hal/usbd_cdc_interface.h"
-#else
-#include "vcph7/usbd_cdc_interface.h"
-#endif
 #include "usb_io.h"
 #ifdef USE_USB_CDC_HID
 #include "usbd_ioreq.h"
@@ -240,7 +236,7 @@ serialPort_t *usbVcpOpen(void)
         USBD_Init(&USB_OTG_dev, USB_OTG_FS_CORE_ID, &USR_desc, &USBD_CDC_cb, &USR_cb);
         break;
     }
-#elif defined(STM32F7) || defined(STM32H7)
+#elif defined(STM32F7) || defined(STM32H7) || defined(STM32G4)
 
     usbGenerateDisconnectPulse();
 
